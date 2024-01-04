@@ -1,0 +1,6 @@
+anyio==3.7.1
+fastapi==0.103.2
+kafka-python==2.0.2
+pymongo==4.6.1
+python-dotenv==0.21.1
+orjson==3.9.7
