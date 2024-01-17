@@ -1,15 +1,14 @@
 # main.py
 import os, json
-from fastapi import FastAPI, Depends, HTTPException
-from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from fastapi import FastAPI, Depends, HTTPException, Form
+from fastapi.security import OAuth2PasswordBearer
 from kafka import KafkaProducer
-from pydantic import BaseModel
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# HTTP Basic Authentication
-security = HTTPBasic()
+# # OAuth2.0 Authentication
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 # Kafka Configuration
 KAFKA_SERVER = os.getenv("KAFKA_SERVER", "localhost:9092")
@@ -25,23 +24,31 @@ producer = KafkaProducer(**kafka_producer_config)
 
 app = FastAPI()
 
-# Pydantic model for JSON payload
-class Item(BaseModel):
-    name: str
-    description: str = None
-
-# FastAPI endpoint to accept JSON payload
-@app.post("/send-to-kafka")
-async def send_to_kafka(item: Item, credentials: HTTPBasicCredentials = Depends(security)):
-    # Check username and password
+# # Function to validate username and password
+def validate_user_password(username: str, password: str):
+    # Replace this with your own dynamic authentication logic
     correct_username = os.getenv("USER_DETAIL", "test_user")
     correct_password = os.getenv("PASSWORD", "test_password")
 
-    if credentials.username != correct_username or credentials.password != correct_password:
+    return username == correct_username and password == correct_password
+
+# FastAPI endpoint to accept JSON payload
+@app.post("/send-to-kafka")
+async def send_to_kafka(username: str = Form(...), password: str = Form(...), token: str = Depends(oauth2_scheme), item_name: str = Form(...), item_description: str = Form(None)):
+    # Validate the token
+    if token != "test_token":
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    # Convert Pydantic model to dictionary
-    payload = item.dict()
+    # Validate the username and password using the custom validation function
+    if not validate_user_password(username, password):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    # preparing request payload from form-data
+    payload = {
+        "name":item_name,
+        "description":item_description
+    }
+
     json_payload = json.dumps(payload)
 
     # Send the payload to Kafka
