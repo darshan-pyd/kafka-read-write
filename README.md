@@ -77,6 +77,7 @@ This command starts the Kafka consumer process, which reads messages from a Kafk
 
 ### Usage
     - Access the FastAPI Swagger documentation at http://localhost:8000/docs for API details.
+    - API will read token from Authorization header. Add header as `Authorization Bearer test_token`
     - Produce messages to the Kafka topic using your producer application.
     - The Kafka consumer will process messages and insert data into the configured database
 
